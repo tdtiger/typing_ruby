@@ -1,0 +1,26 @@
+{
+    "LaTeX": {
+        "easy": [
+            "begin",
+            "end"
+        ],
+        "normal": [
+            "verbatim"
+        ],
+        "hard": [
+            "subsubsection"
+        ]
+    },
+    "Python": {
+        "easy": [
+            "def",
+            "for"
+        ],
+        "normal": [
+            "lambda"
+        ],
+        "hard": [
+            "staticmethod"
+        ]
+    }
+}
