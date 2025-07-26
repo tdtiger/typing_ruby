@@ -2,25 +2,112 @@
     "LaTeX": {
         "easy": [
             "begin",
-            "end"
+            "end",
+            "section",
+            "subsection",
+            "item",
+            "textbf",
+            "textit",
+            "documentclass",
+            "title",
+            "author",
+            "date"
+
         ],
         "normal": [
-            "verbatim"
+            "usepackage",
+            "label",
+            "ref",
+            "emph",
+            "footnote",
+            "caption",
+            "includegraphics",
+            "tableofcontents",
+            "centering",
+            "maketitle"
         ],
         "hard": [
-            "subsubsection"
+            "subsubsection",
+            "textwidth",
+            "newcommand",
+            "pagestyle",
+            "thispagestyle",
+            "mathbb",
+            "vspace",
+            "hfill",
+            "thebibliography"
+        ]
+    },
+    "C": {
+        "easy": [
+            "int",
+            "return",
+            "if",
+            "else",
+            "for",
+            "while",
+            "printf",
+            "scanf",
+            "void",
+            "char"
+        ],
+        "normal": [
+            "switch",
+            "case",
+            "break",
+            "continue",
+            "sizeof",
+            "struct",
+            "typedef",
+            "const",
+            "static",
+            "fopen"
+        ],
+        "hard": [
+            "union",
+            "enum",
+            "extern",
+            "volatile",
+            "goto",
+            "long long",
+            "register",
+            "fseek",
+            "realloc",
+            "signal"
         ]
     },
     "Python": {
         "easy": [
             "def",
-            "for"
+            "for",
+            "in",
+            "if",
+            "else",
+            "elif",
+            "print",
+            "True",
+            "False",
+            "None"
         ],
         "normal": [
-            "lambda"
+            "with",
+            "try",
+            "except",
+            "finally",
+            "import",
+            "as",
+            "lambda",
+            "yield",
+            "class",
+            "self"
         ],
         "hard": [
-            "staticmethod"
+            "nonlocal",
+            "global",
+            "assert",
+            "del",
+            "is",
+            "raise"
         ]
     }
 }

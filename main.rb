@@ -9,19 +9,24 @@ class TypingGame < Gosu::Window
         @font = Gosu::Font.new(32)
         @big_font = Gosu::Font.new(48)
         @input = ""
+
         @score = 0
+        @combo = 0
+        @max_combo = 0
+
         @state = :title
+
         @selected_mode = nil
         @mode_index = 0
         @selected_level = nil
         @level_index = 0
-        @words_data = load_words("question.json")
 
-        @words = ["hello", "world", "ruby", "gosu", "typing", "game"]
+        @words_data = load_words("question.json")
         @current_word = ""
-        @type_sound = Gosu::Sample.new("type.wav")
-        @miss_sound = Gosu::Sample.new("miss.wav")
-        @back_sound = Gosu::Song.new("back.wav")
+
+        @type_sound = Gosu::Sample.new("sound/type.wav")
+        @miss_sound = Gosu::Sample.new("sound/miss.wav")
+        @back_sound = Gosu::Song.new("sound/back.wav")
 
         @time_limit = 30
         @remaining_time = @time_limit
@@ -49,8 +54,10 @@ class TypingGame < Gosu::Window
 
                 if @input == @current_word
                     @score += 1
+                    @combo += 1
+                    @max_combo = [@max_combo, @combo].max
                     @input = ""
-                    @current_word = @words.sample
+                    @current_word = pick_next_word
                 end
         end
     end
@@ -102,11 +109,13 @@ class TypingGame < Gosu::Window
         @font.draw_text(@input, 50, 300, 0, 1.2, 1.2, Gosu::Color::WHITE)
         
         @font.draw_text("Score: #{@score}", 50, 500, 0)
+        @font.draw_text("Combo: #{@combo}", 50, 540, 0)
     end
 
     def draw_result_screen
         @big_font.draw_text("Time's up!", 280, 180, 0, 1.3, 1.3, Gosu::Color::FUCHSIA)
         @font.draw_text("Your score: #{@score}", 320, 270, 0)
+        @font.draw_text("Max Combo: #{@max_combo}", 320, 310, 0)
         @font.draw_text("Press Enter to return to Title", 240, 350, 0)
     end
     
@@ -165,6 +174,7 @@ class TypingGame < Gosu::Window
                     when Gosu::KB_RETURN
                     if @input != @current_word
                         @miss_sound.play
+                        @combo = 0
                         @input = ""
                     end
                 else
@@ -184,13 +194,27 @@ class TypingGame < Gosu::Window
     def start_game(level)
         @selected_level = level 
         @words = @words_data[@selected_mode][@selected_level]
+        @used_words = []
 
         @state = :game
         @score = 0
+        @combo = 0
+        @max_combo = 0
         @input = ""
         @current_word = @words.sample
         @remaining_time = @time_limit
         @last_tick = Gosu.milliseconds
+    end
+
+    def pick_next_word
+        available = @words - @used_words
+        if available.empty?
+            @used_words.clear
+            available = @words.dup
+        end
+        word = available.sample
+        @used_words << word
+        word
     end
 end
 
