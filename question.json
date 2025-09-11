@@ -1,6 +1,6 @@
 {
     "LaTeX": {
-        "easy": [
+        "Basic": [
             "begin",
             "end",
             "section",
@@ -11,10 +11,7 @@
             "documentclass",
             "title",
             "author",
-            "date"
-
-        ],
-        "normal": [
+            "date",
             "usepackage",
             "label",
             "ref",
@@ -26,20 +23,27 @@
             "centering",
             "maketitle"
         ],
-        "hard": [
-            "subsubsection",
-            "textwidth",
-            "newcommand",
-            "pagestyle",
-            "thispagestyle",
-            "mathbb",
-            "vspace",
-            "hfill",
-            "thebibliography"
+        "math": [
+            "frac",
+            "sum",
+            "int",
+            "sqrt",
+            "alpha",
+            "beta",
+            "gamma",
+            "delta",
+            "epsilon",
+            "theta",
+            "lambda",
+            "mu",
+            "pi",
+            "sigma",
+            "phi",
+            "omega"
         ]
     },
     "C": {
-        "easy": [
+        "Basic": [
             "int",
             "return",
             "if",
@@ -49,9 +53,7 @@
             "printf",
             "scanf",
             "void",
-            "char"
-        ],
-        "normal": [
+            "char",
             "switch",
             "case",
             "break",
@@ -61,23 +63,22 @@
             "typedef",
             "const",
             "static",
-            "fopen"
+            "fopen",
+            "fclose"
         ],
-        "hard": [
-            "union",
-            "enum",
-            "extern",
-            "volatile",
-            "goto",
-            "long long",
-            "register",
-            "fseek",
-            "realloc",
-            "signal"
+        "stdlib": [
+            "malloc",
+            "free",
+            "calloc"
+        ],
+        "math": [
+            "sin",
+            "cos",
+            "tan"
         ]
     },
     "Python": {
-        "easy": [
+        "Basic": [
             "def",
             "for",
             "in",
@@ -87,27 +88,29 @@
             "print",
             "True",
             "False",
-            "None"
-        ],
-        "normal": [
-            "with",
-            "try",
-            "except",
-            "finally",
+            "None",
+            "return",
             "import",
             "as",
-            "lambda",
-            "yield",
+            "from",
             "class",
-            "self"
+            "self",
+            "try",
+            "except",
+            "with",
+            "catch"
         ],
-        "hard": [
-            "nonlocal",
-            "global",
-            "assert",
-            "del",
-            "is",
-            "raise"
+        "Numpy": [
+            "array",
+            "zeros",
+            "ones",
+            "linspace",
+            "arange",
+            "dot",
+            "reshape"
+        ],
+        "Keras": [
+            "fit"
         ]
     }
 }
