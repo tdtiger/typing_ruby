@@ -4,10 +4,11 @@ require 'json'
 class TypingGame < Gosu::Window
     def initialize
         super(800, 600)
-        self.caption = "Typing Game"
+        self.caption = "LaTeX Typing Game"
 
         @font = Gosu::Font.new(32)
         @big_font = Gosu::Font.new(48)
+
         @input = ""
 
         # 得点管理
@@ -18,15 +19,11 @@ class TypingGame < Gosu::Window
         # 状態管理
         @state = :title
 
-        # 言語とモード選択
-        @selected_language = nil
-        @language_index = 0
-        @selected_mode = nil
-        @mode_index = 0
-
         # 問題
-        @words_data = load_words("question.json")
-        @current_word = ""
+        @questions_data = load_words("question.json")
+        @current_question = nil
+        @question_image = nil
+        @used_questions = []
 
         # 効果音
         @type_sound = Gosu::Sample.new("sound/type.wav")
@@ -34,7 +31,7 @@ class TypingGame < Gosu::Window
         @back_sound = Gosu::Song.new("sound/back.wav")
 
         # 時間の管理
-        @time_limit = 30
+        @time_limit = 60
         @remaining_time = @time_limit
         @last_tick = 0
     end
@@ -60,12 +57,13 @@ class TypingGame < Gosu::Window
                     @state = :result
                 end
 
-                if @input == @current_word
-                    @score += 1
+                if @input == @current_question["word"]
+                    @score += @combo / 5 + 1
                     @combo += 1
                     @max_combo = [@max_combo, @combo].max
                     @input = ""
-                    @current_word = pick_next_word
+                    @current_question = pick_next_question
+                    @question_image = Gosu::Image.new(@current_question["image"])
                 end
         end
     end
@@ -75,10 +73,6 @@ class TypingGame < Gosu::Window
         case @state
             when :title
                 draw_title_screen
-            when :language_select
-                draw_language_select_screen
-            when :mode_select
-                draw_mode_select_screen
             when :game
                 draw_game_screen
             when :result
@@ -88,41 +82,23 @@ class TypingGame < Gosu::Window
 
     # タイトル画面の描画　
     def draw_title_screen
-        @big_font.draw_text("Typing Game", 220, 200, 0, 1.5, 1.5, Gosu::Color::BLUE)
-        @font.draw_text("Press Enter to Start", 250, 300, 0, 1.0, 1.0, Gosu::Color::WHITE)
-    end
-
-    # 言語選択画面の描画
-    def draw_language_select_screen
-        @big_font.draw_text("Select Language", 210, 150, 0, 1.2, 1.2, Gosu::Color::AQUA)
-        @words_data.keys.each_with_index do |language, i|
-            # 選択中の言語のみハイライト
-            color = (i == @language_index ? Gosu::Color::YELLOW : Gosu::Color::WHITE)
-            @font.draw_text("#{i + 1}. #{language}", 300, 220 + i * 50, 0, 1.2, 1.2, color)
-        end
-    end
-
-    # モード選択画面の描画
-    def draw_mode_select_screen
-        modes = @words_data[@selected_language].keys
-        @big_font.draw_text("Select Mode (#{@selected_language})", 160, 150, 0, 1.2, 1.2, Gosu::Color::AQUA)
-        modes.each_with_index do |mode, i|
-            # 選択中のモードのみハイライト
-            color = (i == @mode_index ? Gosu::Color::YELLOW : Gosu::Color::WHITE)
-            @font.draw_text("#{i + 1}. #{mode}", 300, 220 + i * 50, 0, 1.2, 1.2, color)
-        end
-        @font.draw_text("Press ← Key to return SELECT LANGUAGE", 20, 560, 0, 1.0, 1.0, Gosu::Color::GRAY)
+        @big_font.draw_text("LaTeX Typing Game", 150, 200, 0, 1.3, 1.3, Gosu::Color::BLUE)
+        @font.draw_text("Press Enter to Start", 250, 320, 0, 1.0, 1.0, Gosu::Color::WHITE)
     end
 
     # プレイ画面の描画
     def draw_game_screen
         @font.draw_text("Time: #{@remaining_time}", 650, 30, 0, 1.0, 1.0, Gosu::Color::RED)
 
-        @font.draw_text("Type this word:", 50, 100, 0)
-        @font.draw_text(@current_word, 50, 150, 0, 1.5, 1.5, Gosu::Color::YELLOW)
+        @font.draw_text("Type this:", 50, 100, 0)
+        @font.draw_text(@current_question["word"], 195, 90, 0, 1.5, 1.5, Gosu::Color::YELLOW)
 
-        @font.draw_text("Your input:", 50, 250, 0)
-        @font.draw_text(@input, 50, 300, 0, 1.2, 1.2, Gosu::Color::WHITE)
+        @font.draw_text("Description: #{@current_question["desc"]}", 50, 150, 0, 1.0, 1.0, Gosu::Color::GRAY)
+
+        @question_image.draw(50, 200, 0, 0.3, 0.3)
+
+        @font.draw_text("Your input:", 50, 350, 0)
+        @font.draw_text(@input, 195, 349, 0, 1.2, 1.2, Gosu::Color::WHITE)
         
         @font.draw_text("Score: #{@score}", 50, 500, 0)
         @font.draw_text("Combo: #{@combo}", 50, 540, 0)
@@ -140,47 +116,11 @@ class TypingGame < Gosu::Window
     def button_down(id)
         case @state
             when :title
-                # 言語選択画面へ移行もしくは終了
+                # ゲーム開始もしくは終了
                 if id == Gosu::KB_RETURN
-                    @state = :language_select
+                    start_game
                 elsif id == Gosu::KB_ESCAPE
                     close
-                end
-
-            when :language_select
-                languages = @words_data.keys
-                
-                case id
-                when Gosu::KB_DOWN
-                    @language_index = (@language_index + 1) % languages.size
-                when Gosu::KB_UP
-                    @language_index = (@language_index - 1) % languages.size
-                when Gosu::KB_RETURN
-                    @selected_language = languages[@language_index]
-                    @state = :mode_select
-                when Gosu::KB_1 .. Gosu::KB_9
-                    index = id - Gosu::KB_1
-                    if index < languages.size
-                        @selected_language = languages[index]
-                        @state = :mode_select
-                    end
-                end
-        
-            when :mode_select
-                modes = @words_data[@selected_language].keys
-
-                case id
-                when Gosu::KB_DOWN
-                    @mode_index = (@mode_index + 1) % modes.size
-                when Gosu::KB_UP
-                    @mode_index = (@mode_index - 1) % modes.size
-                when Gosu::KB_RETURN
-                    start_game(modes[@mode_index])
-                when Gosu::KB_LEFT
-                    @state = :language_select
-                when Gosu::KB_1 .. Gosu::KB_3
-                    index = id - Gosu::KB_1
-                    start_game(modes[index]) if index < modes.size
                 end
 
             when :game
@@ -197,8 +137,9 @@ class TypingGame < Gosu::Window
                         @input = ""
                     end
                 else
-                    if id.between?(Gosu::KB_A, Gosu::KB_Z)
-                        @input << (65 + (id - Gosu::KB_A)).chr.downcase
+                    char = button_id_to_char(id)
+                    if char
+                        @input << char
                         @type_sound.play
                     end
                 end
@@ -210,31 +151,65 @@ class TypingGame < Gosu::Window
         end
     end
 
-    # ゲーム開始時の初期化を行う
-    def start_game(mode)
-        @selected_mode = mode 
-        @words = @words_data[@selected_language][@selected_mode]
-        @used_words = []
+    # キーコードを文字に変換
+    def button_id_to_char(id)
+        if id.between?(Gosu::KB_A, Gosu::KB_Z)
+            return (65 + (id - Gosu::KB_A)).chr.downcase
+        elsif id == Gosu::KB_BACKTICK 
+            return "`"
+        elsif id == Gosu::KB_MINUS
+            return "-"
+        elsif id == Gosu::KB_EQUALS
+            return "="
+        elsif id == Gosu::KB_LEFT_BRACKET
+            return "["
+        elsif id == Gosu::KB_RIGHT_BRACKET
+            return "]"
+        elsif id == Gosu::KB_BACKSLASH
+            return "\\"
+        elsif id == Gosu::KB_SEMICOLON
+            return ";"
+        elsif id == Gosu::KB_APOSTROPHE
+            return "'"
+        elsif id == Gosu::KB_COMMA
+            return ","
+        elsif id == Gosu::KB_PERIOD
+            return "."
+        elsif id == Gosu::KB_SLASH
+            return "/"  
+        elsif id == Gosu::KB_SPACE
+            return " "
+        elsif id == Gosu::KB_0 .. Gosu::KB_9
+            return (id - Gosu::KB_0).to_s
+        elsif id == Gosu::KB_ESCAPE
+            return "_"
+        else
+            return nil
+        end
+    end
 
+    # ゲーム開始時の初期化を行う
+    def start_game
         @state = :game
         @score = 0
         @combo = 0
         @max_combo = 0
         @input = ""
-        @current_word = @words.sample
+        @current_question = pick_next_question
+        @question_image = Gosu::Image.new(@current_question["image"])
         @remaining_time = @time_limit
         @last_tick = Gosu.milliseconds
     end
 
-    def pick_next_word
-        available = @words - @used_words
+    def pick_next_question
+        available = @questions_data - @used_questions
         if available.empty?
-            @used_words.clear
-            available = @words.dup
+            @used_questions.clear
+            available = @questions_data.dup
         end
-        word = available.sample
-        @used_words << word
-        word
+        q = available.sample
+        @used_questions << q
+        q
     end
 end
 
