@@ -31,7 +31,7 @@ class TypingGame < Gosu::Window
         @back_sound = Gosu::Song.new("sound/back.wav")
 
         # 時間の管理
-        @time_limit = 60
+        @time_limit = 40
         @remaining_time = @time_limit
         @last_tick = 0
     end
@@ -54,6 +54,7 @@ class TypingGame < Gosu::Window
                 end
 
                 if @remaining_time <= 0
+                    save_score
                     @state = :result
                 end
 
@@ -88,18 +89,24 @@ class TypingGame < Gosu::Window
 
     # プレイ画面の描画
     def draw_game_screen
+        # 残り時間
         @font.draw_text("Time: #{@remaining_time}", 650, 30, 0, 1.0, 1.0, Gosu::Color::RED)
 
+        # 問題
         @font.draw_text("Type this:", 50, 100, 0)
         @font.draw_text(@current_question["word"], 195, 90, 0, 1.5, 1.5, Gosu::Color::YELLOW)
 
+        # 解説
         @font.draw_text("Description: #{@current_question["desc"]}", 50, 150, 0, 1.0, 1.0, Gosu::Color::GRAY)
 
+        # 画像
         @question_image.draw(50, 200, 0, 0.3, 0.3)
 
+        # 入力
         @font.draw_text("Your input:", 50, 350, 0)
         @font.draw_text(@input, 195, 349, 0, 1.2, 1.2, Gosu::Color::WHITE)
         
+        # 得点とコンボ
         @font.draw_text("Score: #{@score}", 50, 500, 0)
         @font.draw_text("Combo: #{@combo}", 50, 540, 0)
     end
@@ -109,7 +116,18 @@ class TypingGame < Gosu::Window
         @big_font.draw_text("Time's up!", 280, 180, 0, 1.3, 1.3, Gosu::Color::FUCHSIA)
         @font.draw_text("Your score: #{@score}", 320, 270, 0)
         @font.draw_text("Max Combo: #{@max_combo}", 320, 310, 0)
-        @font.draw_text("Press Enter to return to Title", 240, 350, 0)
+        draw_ranking(170, 360)
+        @font.draw_text("Press Enter to return to Title", 240, 500, 0)
+    end
+
+    def draw_ranking(x, y)
+        scores = File.exist?("scores.json") ? JSON.parse(File.read("scores.json")) : []
+        # スコア順、同率の場合はコンボも比較してソート
+        scores.sort_by! {|s| [-s["score"], -s["combo"]]}
+        # 上位5件を表示
+        scores.first(5).each_with_index do |s, i|
+            @font.draw_text("#{i + 1}. Score : #{s["score"]} (Combo #{s["combo"]}) [#{s["date"]}]", x, y + i * 40, 1)
+        end
     end
     
     # キー入力の処理
@@ -152,6 +170,7 @@ class TypingGame < Gosu::Window
     end
 
     # キーコードを文字に変換
+    # おそらくMacとWindowsで違う
     def button_id_to_char(id)
         if id.between?(Gosu::KB_A, Gosu::KB_Z)
             return (65 + (id - Gosu::KB_A)).chr.downcase
@@ -202,14 +221,27 @@ class TypingGame < Gosu::Window
     end
 
     def pick_next_question
+        # 全問題から出題済みの問題を除く
         available = @questions_data - @used_questions
+        # 全ての問題を出題し終えていたらリセット
         if available.empty?
             @used_questions.clear
             available = @questions_data.dup
         end
+        # 未出題の問題をランダムにピック
         q = available.sample
         @used_questions << q
         q
+    end
+
+    def save_score
+        # scores.jsonを読み込む
+        # 存在しなかったら空の配列を用意
+        scores = File.exist?("scores.json") ? JSON.parse(File.read("scores.json")) : []
+        scores << {
+            "score" => @score, "combo" => @max_combo, "date" => Time.now.strftime("%Y-%m-%d")
+        }
+        File.write("scores.json", JSON.pretty_generate(scores))
     end
 end
 
